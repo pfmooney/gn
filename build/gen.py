@@ -44,10 +44,12 @@ class Platform(object):
       self._platform = 'openbsd'
     elif self._platform.startswith('haiku'):
       self._platform = 'haiku'
+    elif self._platform.startswith('sunos'):
+      self._platform = 'solaris'
 
   @staticmethod
   def known_platforms():
-    return ['linux', 'darwin', 'mingw', 'msvc', 'aix', 'fuchsia', 'freebsd', 'openbsd', 'haiku']
+    return ['linux', 'darwin', 'mingw', 'msvc', 'aix', 'fuchsia', 'freebsd', 'openbsd', 'haiku', 'solaris']
 
   def platform(self):
     return self._platform
@@ -73,8 +75,11 @@ class Platform(object):
   def is_haiku(self):
     return self._platform == 'haiku'
 
+  def is_solaris(self):
+    return self._platform == 'solaris'
+
   def is_posix(self):
-    return self._platform in ['linux', 'freebsd', 'darwin', 'aix', 'openbsd', 'haiku']
+    return self._platform in ['linux', 'freebsd', 'darwin', 'aix', 'openbsd', 'haiku', 'solaris']
 
 
 def main(argv):
@@ -185,6 +190,7 @@ def WriteGenericNinja(path, static_libraries, executables,
       'aix': 'build_aix.ninja.template',
       'openbsd': 'build_openbsd.ninja.template',
       'haiku': 'build_haiku.ninja.template',
+      'solaris': 'build_linux.ninja.template',
   }[platform.platform()])
 
   with open(template_filename) as f:
@@ -300,7 +306,7 @@ def WriteGNNinja(path, platform, host, options):
       ldflags.extend(['-fdata-sections', '-ffunction-sections'])
       if platform.is_darwin():
         ldflags.append('-Wl,-dead_strip')
-      elif not platform.is_aix():
+      elif not platform.is_aix() and not platform.is_solaris():
         # Garbage collection is done by default on aix.
         ldflags.append('-Wl,--gc-sections')
 
@@ -310,6 +316,8 @@ def WriteGNNinja(path, platform, host, options):
           ldflags.append('-Wl,-S')
         elif platform.is_aix():
           ldflags.append('-Wl,-s')
+        elif platform.is_solaris():
+          ldflags.append('-Wl,--strip-all')
         else:
           ldflags.append('-Wl,-strip-all')
 
